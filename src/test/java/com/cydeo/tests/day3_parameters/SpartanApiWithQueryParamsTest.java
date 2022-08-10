@@ -44,4 +44,6 @@ public class SpartanApiWithQueryParamsTest {
 
         assertEquals(ContentType.JSON.toString(),response.contentType());
     }
+
+
 }

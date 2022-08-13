@@ -13,4 +13,5 @@ public class Spartan {
     private long phone;
 
 
+
 }

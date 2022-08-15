@@ -1,4 +1,154 @@
 package com.cydeo.tests.day09_post_put_delete;
 
-public class SpartanPostTest {
+import com.cydeo.pojo.Spartan;
+import com.cydeo.utils.SpartanRestUtils;
+import com.cydeo.utils.SpartanTestBase;
+import io.restassured.http.ContentType;
+import io.restassured.path.json.JsonPath;
+import io.restassured.response.Response;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.restassured.RestAssured.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+
+public class SpartanPostTest extends SpartanTestBase {
+
+    /**
+     given accept is json and content type is json
+     and body is:
+     {
+     "gender": "Male",
+     "name": "TestPost1"
+     "phone": 1234567425
+     }
+     When I send POST request to /spartans
+     Then status code is 201
+     And content type is json
+     And "success" is "A Spartan is Born!"
+     Data name, gender , phone matches my request details
+     */
+
+    @DisplayName("POST new spartan using string json")
+    @Test
+    public void addNewSpartanAsJsonTest() {
+
+        String jsonBody="{\n" +
+                "     \"gender\": \"Male\",\n" +
+                "     \"name\": \"TestPost1\",\n" +
+                "     \"phone\": 1234567425\n" +
+                "     }";
+
+        Response response = given().accept(ContentType.JSON)
+                .and().contentType(ContentType.JSON)
+                .and().body(jsonBody)
+                .when().post("/spartans");
+
+        response.prettyPrint();
+        System.out.println("status code = " + response.statusCode());
+        assertThat(response.statusCode(), is(201));
+
+        //verify header
+        assertThat(response.contentType(), is("application/json"));
+
+        //assign response to jsonpath
+        JsonPath jsonPath = response.jsonPath();
+        assertThat(jsonPath.getString("success"), equalTo("A Spartan is Born!"));
+        assertThat(jsonPath.getString("data.name"), equalTo("TestPost1"));
+
+        assertThat(jsonPath.getString("data.gender"), equalTo("Male"));
+        assertThat(jsonPath.getLong("data.phone"), equalTo(1234567425L));
+
+        //extract the id of newly added spartan
+        int spartanID=jsonPath.getInt("data.id");
+        System.out.println("spartaID = " + spartanID);
+        //delete the spartan after post
+        SpartanRestUtils.deleteSpartanById(spartanID);
+    }
+
+    /**
+     {
+     "gender": "Male",
+     "name": "TestPost1"
+     "phone": 1234567425
+     }
+     */
+    @DisplayName("POST /spartans using map - SERIALIZATION")
+    @Test
+    public void addNewSpartanAsMapTest() {
+        Map<String, Object> spartanPostMap = new HashMap<>();
+        spartanPostMap.put("gender", "Male");
+        spartanPostMap.put("name", "TestPost1");
+        spartanPostMap.put("phone", 1234567425L);
+
+        Response response = given().accept(ContentType.JSON)
+                .and().contentType(ContentType.JSON)
+                .and().body(spartanPostMap)  //Map to Json - serialization
+                .when().post("/spartans");
+
+        response.prettyPrint();
+        System.out.println("status code = " + response.statusCode());
+        assertThat(response.statusCode(), is(201));
+
+        //verify header
+        assertThat(response.contentType(), is("application/json"));
+
+        //assign response to jsonpath
+        JsonPath jsonPath = response.jsonPath();
+        assertThat(jsonPath.getString("success"), equalTo("A Spartan is Born!"));
+
+        assertThat(jsonPath.getString("data.name"), equalTo(spartanPostMap.get("name")));
+
+        assertThat(jsonPath.getString("data.gender"), equalTo(spartanPostMap.get("gender")));
+        assertThat(jsonPath.getLong("data.phone"), equalTo(spartanPostMap.get("phone")));
+
+        //extract the id of newly added spartan
+        int spartanId = jsonPath.getInt("data.id");
+        System.out.println("spartanId = " + spartanId);
+        //delete the spartan after post
+        SpartanRestUtils.deleteSpartanById(spartanId);
+
+    }
+
+    @DisplayName("POST /spartans using POJO - SERIALIZATION")
+    @Test
+    public void addNewSpartanAsPOJOTest() {
+        Spartan newSpartan = new Spartan();
+        newSpartan.setGender("Male");
+        newSpartan.setName("TestPost1");
+        newSpartan.setPhone(1234567425L);
+
+        Response response = given().accept(ContentType.JSON)
+                .and().contentType(ContentType.JSON)
+                .and().body(newSpartan)
+                .when().post("/spartans");
+
+        response.prettyPrint();
+        System.out.println("status code = " + response.statusCode());
+        assertThat(response.statusCode(), is(201));
+
+        //verify header
+        assertThat(response.contentType(), is("application/json"));
+
+        //assign response to jsonpath
+        JsonPath jsonPath = response.jsonPath();
+        assertThat(jsonPath.getString("success"), equalTo("A Spartan is Born!"));
+
+        assertThat(jsonPath.getString("data.name"), equalTo(newSpartan.getName()));
+        assertThat(jsonPath.getString("data.gender"), equalTo(newSpartan.getGender()));
+        assertThat(jsonPath.getLong("data.phone"), equalTo(newSpartan.getPhone()));
+
+        //extract the id of newly added spartan
+        int spartanId = jsonPath.getInt("data.id");
+        System.out.println("spartanId = " + spartanId);
+        //delete the spartan after post
+        SpartanRestUtils.deleteSpartanById(spartanId);
+
+
+    }
+
 }

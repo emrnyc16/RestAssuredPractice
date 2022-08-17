@@ -1,4 +1,8 @@
 package com.cydeo.tests.day10_db_vs_api_put_delete;
+
+import com.cydeo.pojo.Spartan;
+import com.cydeo.utils.SpartanTestBase;
+import org.junit.jupiter.api.Test;
 import com.cydeo.utils.*;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
@@ -7,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.DisplayName;
 
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,8 +33,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-
-public class SpartanAPIAndDBValidationTest extends SpartanTestBase {
+public class Practice extends SpartanTestBase {
 
     /**
      given accept is json and content type is json
@@ -50,55 +54,46 @@ public class SpartanAPIAndDBValidationTest extends SpartanTestBase {
      Then name, gender , phone values must match with POST request details
      */
 
-    @DisplayName("POST /api/spartan -> then validate in DB")
     @Test
-    public void postNewSpartanThenValidateInDBTest() {
-        Map<String, Object> postRequestMap = new HashMap<>();
-        postRequestMap.put("gender", "Male");
-        postRequestMap.put("name", "PostVSDatabase");
-        postRequestMap.put("phone", 1234567425L);
+    public void test() throws SQLException {
+        Spartan spartan = new Spartan();
+        spartan.setPhone(1234567425L);
+        spartan.setGender("Male");
+        spartan.setName("PostVSDatabase");
 
         Response response = given().accept(ContentType.JSON)
                 .and().contentType(ContentType.JSON)
-                .and().body(postRequestMap) //set request json body. map > json
+                .and().body(spartan)
                 .when().post("/spartans");
-
         response.prettyPrint();
+        assertThat(response.statusCode(),equalTo(201));
+        assertThat(response.getContentType(),equalTo("application/json"));
+        assertThat(response.jsonPath().getString("success"),is("A Spartan is Born!"));
 
-        assertThat(response.statusCode(), equalTo(201));
-        assertThat(response.contentType(), equalTo("application/json"));
 
-        JsonPath jsonPath = response.jsonPath();
 
-        //assertThat(response.path("success"), equalTo("A Spartan is Born!"));
-        //assertThat(response.jsonPath().getString("success"), equalTo("A Spartan is Born!"));
-        assertThat(jsonPath.getString("success"), equalTo("A Spartan is Born!"));
-
-        int newSpartanID = jsonPath.getInt("data.id");
-        System.out.println("newSpartanID = " + newSpartanID);
-
-        //database steps
-        String query = "SELECT name, gender, phone FROM spartans WHERE spartan_id = " + newSpartanID;
+        int spartanId= response.jsonPath().getInt("data.id");
 
         String dbUrl = ConfigurationReader.getProperty("spartan.db.url");
         String dbUser = ConfigurationReader.getProperty("spartan.db.userName");
         String dbPwd = ConfigurationReader.getProperty("spartan.db.password");
 
-        //connect to database
-        DBUtils.createConnection(dbUrl, dbUser, dbPwd);
-        //run the query and get result as Map object
+        Connection connection = DriverManager.getConnection(dbUrl,dbUser,dbPwd);
+
+        String query="SELECT name,gender phone FROM spartans where spartan_id = " + spartanId;
+
         Map<String, Object> dbMap = DBUtils.getRowMap(query);
         System.out.println("dbMap = " + dbMap);
 
         //assert/validate data from database Matches data from post request
-        assertThat(dbMap.get("NAME") , equalTo(postRequestMap.get("name")));
-        assertThat(dbMap.get("GENDER") , equalTo(postRequestMap.get("gender")));
-        assertThat(dbMap.get("PHONE") , equalTo(postRequestMap.get("phone")+""));
+        assertThat(dbMap.get("NAME") , equalTo(spartan.getName()));
+        assertThat(dbMap.get("GENDER") , equalTo(spartan.getGender()));
+        assertThat(dbMap.get("PHONE") , equalTo(spartan.getPhone()+""));
 
         //disconnect from database
         DBUtils.destroy();
+
+
+
     }
-
-
-
 }

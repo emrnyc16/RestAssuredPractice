@@ -33,6 +33,7 @@ public class SpartanPostTest extends SpartanTestBase {
      Data name, gender , phone matches my request details
      */
 
+
     @DisplayName("POST new spartan using string json")
     @Test
     public void addNewSpartanAsJsonTest() {

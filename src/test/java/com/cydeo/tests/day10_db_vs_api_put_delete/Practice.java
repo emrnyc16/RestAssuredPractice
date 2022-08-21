@@ -94,6 +94,40 @@ public class Practice extends SpartanTestBase {
         DBUtils.destroy();
 
 
+    }
+
+    @Test
+    public void test2(){
+        Spartan spartan = new Spartan();
+        spartan.setName("MErt");
+        spartan.setGender("Male");
+        spartan.setPhone(3333367425L);
+
+        Response response = given().accept(ContentType.JSON)
+                .contentType(ContentType.JSON)
+                .and().body(spartan)
+                .when().post("/spartans");
+
+        assertThat(response.statusCode(),is(201));
+        assertThat(response.contentType(),equalTo("application/json"));
+        assertThat(response.jsonPath().getString("success"),is(equalTo("A Spartan is Born!")));
+
+        int id= response.jsonPath().getInt("data.id");
+        String query= "Select name, gender, phone from spartans where spartan_id= " + id;
+
+
+        String dbUrl = ConfigurationReader.getProperty("spartan.db.url");
+        String dbUser = ConfigurationReader.getProperty("spartan.db.userName");
+        String dbPwd = ConfigurationReader.getProperty("spartan.db.password");
+        DBUtils.createConnection(dbUrl,dbPwd,dbUser);
+
+        Map<String, Object> rowMap = DBUtils.getRowMap(query);
+
+        assertThat(rowMap.get("NAME") , equalTo(spartan.getName()));
+        assertThat(rowMap.get("GENDER") , equalTo(spartan.getGender()));
+        assertThat(rowMap.get("PHONE") , equalTo(spartan.getPhone()+""));
+
+
 
     }
 }
